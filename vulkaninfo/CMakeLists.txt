@@ -26,8 +26,10 @@ set(GENERATED generated)
 
 if (VULKANINFO_BUILD_EXECUTABLE)
     add_executable(vulkaninfo)
+    target_compile_definitions(VKINFO_EXECUTABLE)
 else()
     add_library(vulkaninfo STATIC)
+    target_include_directories(vulkaninfo PUBLIC include)
 endif()
 
 set_target_properties(vulkaninfo PROPERTIES OUTPUT_NAME ${VULKANINFO_NAME})

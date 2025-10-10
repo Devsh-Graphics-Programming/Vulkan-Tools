@@ -28,6 +28,8 @@
  *
  */
 
+#include <vulkaninfo/vulkaninfo.h>
+
 #ifdef _WIN32
 #include <crtdbg.h>
 #endif
@@ -1239,13 +1241,18 @@ void RunPrinter(Printer &p, ParsedResults parse_data, AppInstance &instance, std
     }
 }
 
+#ifdef VKINFO_EXECUTABLE
 #ifdef VK_USE_PLATFORM_IOS_MVK
 // On iOS, we'll call this ourselves from a parent routine in the GUI
 int vulkanInfoMain(int argc, char **argv) {
 #else
 int main(int argc, char **argv) {
 #endif
+    return nbl::video::vulkaninfo(int argc, char **argv);
+}
+#endif
 
+int nbl::video::vulkaninfo(int argc, char** argv)
     // Figure out the name of the executable, pull out the name if given a path
     // Default is `vulkaninfo`
     std::string executable_name = APP_SHORT_NAME;
