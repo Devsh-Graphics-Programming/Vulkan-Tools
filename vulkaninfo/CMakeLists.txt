@@ -18,10 +18,18 @@
 
 # These variables enable downstream users to customize the CMake targets
 # based on the target API variant (e.g. Vulkan SC)
+project(vulkaninfo)
+
+option(VULKANINFO_BUILD_EXECUTABLE "Builds vulkaninfo executable instead of library" OFF)
 set(VULKANINFO_NAME vulkaninfo)
 set(GENERATED generated)
 
-add_executable(vulkaninfo)
+if (VULKANINFO_BUILD_EXECUTABLE)
+    add_executable(vulkaninfo)
+else()
+    add_library(vulkaninfo SHARED)
+endif()
+
 set_target_properties(vulkaninfo PROPERTIES OUTPUT_NAME ${VULKANINFO_NAME})
 
 target_sources(vulkaninfo PRIVATE vulkaninfo.cpp)
@@ -49,10 +57,11 @@ if(WIN32)
     # RC file wants the value of FILEVERSION to separated by commas
     string(REPLACE "." ", " VULKANINFO_VER_FILE_VERSION "${VULKANINFO_RC_VERSION}")
 
-    # Configure the file to include the versioning info
-    configure_file(vulkaninfo.rc.in ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)
-
-    target_sources(vulkaninfo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)
+    if (VULKANINFO_BUILD_EXECUTABLE)
+        # Configure the file to include the versioning info
+        configure_file(vulkaninfo.rc.in ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)
+        target_sources(vulkaninfo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)
+    endif()
 endif()
 
 target_include_directories(vulkaninfo PRIVATE
