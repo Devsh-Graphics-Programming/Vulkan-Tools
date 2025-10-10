@@ -27,7 +27,7 @@ set(GENERATED generated)
 if (VULKANINFO_BUILD_EXECUTABLE)
     add_executable(vulkaninfo)
 else()
-    add_library(vulkaninfo SHARED)
+    add_library(vulkaninfo STATIC)
 endif()
 
 set_target_properties(vulkaninfo PROPERTIES OUTPUT_NAME ${VULKANINFO_NAME})
