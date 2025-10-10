@@ -1252,7 +1252,7 @@ int main(int argc, char **argv) {
 }
 #endif
 
-int nbl::video::vulkaninfo(int argc, char** argv)
+int nbl::video::vulkaninfo(int argc, char** argv) {
     // Figure out the name of the executable, pull out the name if given a path
     // Default is `vulkaninfo`
     std::string executable_name = APP_SHORT_NAME;
