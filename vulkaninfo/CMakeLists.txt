@@ -118,7 +118,7 @@ if(APPLE)
 endif()
 
 target_link_libraries(vulkaninfo PRIVATE
-    Vulkan::Headers
+    Vulkan-Headers
     ${CMAKE_DL_LIBS}
 )
 
