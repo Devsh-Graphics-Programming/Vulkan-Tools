@@ -28,8 +28,6 @@
  *
  */
 
-#include <vulkaninfo/vulkaninfo.h>
-
 #ifdef _WIN32
 #include <crtdbg.h>
 #endif
@@ -1100,63 +1098,64 @@ struct ParsedResults {
     std::string default_filename;
 };
 
-util::vulkaninfo_optional<ParsedResults> parse_arguments(int argc, char **argv, std::string executable_name) {
+util::vulkaninfo_optional<ParsedResults> parse_arguments(const std::span<const std::string_view>& args, std::string executable_name) {
     ParsedResults results{};
     results.default_filename = APP_SHORT_NAME ".txt";
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 1; i < args.size(); ++i) {
         // A internal-use-only format for communication with the Vulkan Configurator tool
         // Usage "--vkconfig_output <path>"
         // -o can be used to specify the filename instead
-        if (0 == strcmp("--vkconfig_output", argv[i])) {
+        auto& arg = args[i];
+        if (0 == strcmp("--vkconfig_output", args[i].data())) {
             results.output_category = OutputCategory::vkconfig_output;
             results.print_to_file = true;
             results.default_filename = APP_SHORT_NAME ".json";
-            if (argc > (i + 1) && argv[i + 1][0] != '-') {
+            if (args.size() > (i + 1) && args[i + 1][0] != '-') {
 #ifdef WIN32
-                results.filename = (std::string(argv[i + 1]) + "\\" APP_SHORT_NAME ".json");
+                results.filename = (std::string(args[i + 1]) + "\\" APP_SHORT_NAME ".json");
 #else
                 results.filename = (std::string(argv[i + 1]) + "/" APP_SHORT_NAME ".json");
 #endif
                 ++i;
             }
-        } else if (strncmp("--json", argv[i], 6) == 0 || strncmp(argv[i], "-j", 2) == 0) {
-            if (strlen(argv[i]) > 7 && strncmp("--json=", argv[i], 7) == 0) {
-                results.selected_gpu = static_cast<uint32_t>(strtol(argv[i] + 7, nullptr, 10));
+        } else if (strncmp("--json", args[i].data(), 6) == 0 || strncmp(args[i].data(), "-j", 2) == 0) {
+            if (args[i].size() > 7 && strncmp("--json=", args[i].data(), 7) == 0) {
+                results.selected_gpu = static_cast<uint32_t>(strtol(args[i].data() + 7, nullptr, 10));
                 results.has_selected_gpu = true;
             }
-            if (strlen(argv[i]) > 3 && strncmp("-j=", argv[i], 3) == 0) {
-                results.selected_gpu = static_cast<uint32_t>(strtol(argv[i] + 3, nullptr, 10));
+            if (args[i].size() > 3 && strncmp("-j=", args[i].data(), 3) == 0) {
+                results.selected_gpu = static_cast<uint32_t>(strtol(args[i].data() + 3, nullptr, 10));
                 results.has_selected_gpu = true;
             }
             results.output_category = OutputCategory::profile_json;
             results.default_filename = APP_SHORT_NAME ".json";
             results.print_to_file = true;
-        } else if (strcmp(argv[i], "--summary") == 0) {
+        } else if (strcmp(args[i].data(), "--summary") == 0) {
             results.output_category = OutputCategory::summary;
-        } else if (strcmp(argv[i], "--text") == 0) {
+        } else if (strcmp(args[i].data(), "--text") == 0) {
             results.output_category = OutputCategory::text;
             results.default_filename = APP_SHORT_NAME ".txt";
-        } else if (strcmp(argv[i], "--html") == 0) {
+        } else if (strcmp(args[i].data(), "--html") == 0) {
             results.output_category = OutputCategory::html;
             results.print_to_file = true;
             results.default_filename = APP_SHORT_NAME ".html";
-        } else if (strcmp(argv[i], "--show-tool-props") == 0) {
+        } else if (strcmp(args[i].data(), "--show-tool-props") == 0) {
             results.show_tool_props = true;
-        } else if (strcmp(argv[i], "--show-formats") == 0) {
+        } else if (strcmp(args[i].data(), "--show-formats") == 0) {
             results.show_formats = true;
-        } else if (strcmp(argv[i], "--show-promoted-structs") == 0) {
+        } else if (strcmp(args[i].data(), "--show-promoted-structs") == 0) {
             results.show_promoted_structs = true;
-        } else if (strcmp(argv[i], "--show-video-props") == 0) {
+        } else if (strcmp(args[i].data(), "--show-video-props") == 0) {
             results.show_video_props = true;
-        } else if ((strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) && argc > (i + 1)) {
-            if (argv[i + 1][0] == '-') {
+        } else if ((strcmp(args[i].data(), "--output") == 0 || strcmp(args[i].data(), "-o") == 0) && args.size() > (i + 1)) {
+            if (args[i + 1][0] == '-') {
                 std::cout << "-o or --output must be followed by a filename\n";
                 return {};
             }
             results.print_to_file = true;
-            results.filename = argv[i + 1];
+            results.filename = args[i + 1];
             ++i;
-        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+        } else if (strcmp(args[i].data(), "--help") == 0 || strcmp(args[i].data(), "-h") == 0) {
             print_usage(executable_name);
             return {};
         } else {
@@ -1248,28 +1247,29 @@ int vulkanInfoMain(int argc, char **argv) {
 #else
 int main(int argc, char **argv) {
 #endif
-    return nbl::video::vulkaninfo(int argc, char **argv);
+    static std::vector<std::string_view> args(argv, argv + argc);
+    return nbl::video::vulkaninfo(args);
 }
 #endif
 
-int nbl::video::vulkaninfo(int argc, char** argv) {
+int vulkaninfo(const std::span<const std::string_view> args) {
     // Figure out the name of the executable, pull out the name if given a path
     // Default is `vulkaninfo`
     std::string executable_name = APP_SHORT_NAME;
-    if (argc >= 1) {
-        const auto argv_0 = std::string(argv[0]);
-        // don't include path separator
-        // Look for forward slash first, only look for backslash if that found nothing
-        auto last_occurrence = argv_0.rfind('/');
-        if (last_occurrence == std::string::npos) {
-            last_occurrence = argv_0.rfind('\\');
-        }
-        if (last_occurrence != std::string::npos && last_occurrence + 1 < argv_0.size()) {
-            executable_name = argv_0.substr(last_occurrence + 1);
-        }
-    }
+    //if (args.size() >= 1) {
+    //    const auto argv_0 = args[0];
+    //    // don't include path separator
+    //    // Look for forward slash first, only look for backslash if that found nothing
+    //    auto last_occurrence = argv_0.rfind('/');
+    //    if (last_occurrence == std::string::npos) {
+    //        last_occurrence = argv_0.rfind('\\');
+    //    }
+    //    if (last_occurrence != std::string::npos && last_occurrence + 1 < argv_0.size()) {
+    //        executable_name = argv_0.substr(last_occurrence + 1);
+    //    }
+    //}
 
-    auto parsing_return = parse_arguments(argc, argv, executable_name);
+    auto parsing_return = parse_arguments(args, executable_name);
     if (!parsing_return) return 1;
     ParsedResults parse_data = parsing_return.value();
 

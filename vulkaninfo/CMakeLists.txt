@@ -24,12 +24,12 @@ option(VULKANINFO_BUILD_EXECUTABLE "Builds vulkaninfo executable instead of libr
 set(VULKANINFO_NAME vulkaninfo)
 set(GENERATED generated)
 
+add_library(vulkaninfo OBJECT)
 if (VULKANINFO_BUILD_EXECUTABLE)
-    add_executable(vulkaninfo)
-    target_compile_definitions(VKINFO_EXECUTABLE)
-else()
-    add_library(vulkaninfo STATIC)
-    target_include_directories(vulkaninfo PUBLIC include)
+    add_executable(vulkaninfo_exe)
+    set_target_properties(vulkaninfo_exe PROPERTIES OUTPUT_NAME vulkaninfo)
+    target_compile_definitions(vulkaninfo_exe PUBLIC VKINFO_EXECUTABLE)
+    target_sources(vulkaninfo_exe PRIVATE vulkaninfo.cpp)
 endif()
 
 set_target_properties(vulkaninfo PROPERTIES OUTPUT_NAME ${VULKANINFO_NAME})

@@ -42,6 +42,7 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include <span>
 
 #include <assert.h>
 #include <stdint.h>
