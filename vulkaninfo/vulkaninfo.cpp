@@ -1101,7 +1101,7 @@ struct ParsedResults {
 util::vulkaninfo_optional<ParsedResults> parse_arguments(const std::span<const std::string_view>& args, std::string executable_name) {
     ParsedResults results{};
     results.default_filename = APP_SHORT_NAME ".txt";
-    for (int i = 1; i < args.size(); ++i) {
+    for (int i = 0; i < args.size(); ++i) {
         // A internal-use-only format for communication with the Vulkan Configurator tool
         // Usage "--vkconfig_output <path>"
         // -o can be used to specify the filename instead
@@ -1158,10 +1158,8 @@ util::vulkaninfo_optional<ParsedResults> parse_arguments(const std::span<const s
         } else if (strcmp(args[i].data(), "--help") == 0 || strcmp(args[i].data(), "-h") == 0) {
             print_usage(executable_name);
             return {};
-        } else {
-            print_usage(executable_name);
-            return {};
-        }
+        } else
+            continue;
     }
     return results;
 }
@@ -1256,18 +1254,6 @@ int vulkaninfo(const std::span<const std::string_view> args) {
     // Figure out the name of the executable, pull out the name if given a path
     // Default is `vulkaninfo`
     std::string executable_name = APP_SHORT_NAME;
-    //if (args.size() >= 1) {
-    //    const auto argv_0 = args[0];
-    //    // don't include path separator
-    //    // Look for forward slash first, only look for backslash if that found nothing
-    //    auto last_occurrence = argv_0.rfind('/');
-    //    if (last_occurrence == std::string::npos) {
-    //        last_occurrence = argv_0.rfind('\\');
-    //    }
-    //    if (last_occurrence != std::string::npos && last_occurrence + 1 < argv_0.size()) {
-    //        executable_name = argv_0.substr(last_occurrence + 1);
-    //    }
-    //}
 
     auto parsing_return = parse_arguments(args, executable_name);
     if (!parsing_return) return 1;
