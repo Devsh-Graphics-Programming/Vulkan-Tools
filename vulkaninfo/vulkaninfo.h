@@ -816,7 +816,10 @@ static VkSurfaceKHR AppCreateWin32Surface(AppInstance &inst) {
     return surface;
 }
 
-static void AppDestroyWin32Window(AppInstance &inst) { user32_handles->pfnDestroyWindow(inst.h_wnd); }
+static void AppDestroyWin32Window(AppInstance &inst) { 
+    user32_handles->pfnDestroyWindow(inst.h_wnd); 
+    UnregisterClass(APP_SHORT_NAME, inst.h_instance);
+}
 #endif  // VK_USE_PLATFORM_WIN32_KHR
 //-----------------------------------------------------------
 
