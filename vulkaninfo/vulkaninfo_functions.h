@@ -126,6 +126,9 @@ static VkResult load_vulkan_library() {
     vulkan_library = NULL;
 #if defined(WIN32)
     HMODULE library = LoadLibraryA("vulkan-1.dll");
+    if (library == NULL)
+        library = GetModuleHandleA("vulkan-1.dll"); // maybe vulkan is already loaded and we only need to get the handle
+
     if (library == NULL) return VK_ERROR_INITIALIZATION_FAILED;
 
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)(void (*)(void))GetProcAddress(library, "vkGetInstanceProcAddr");
