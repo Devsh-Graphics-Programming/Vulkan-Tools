@@ -127,9 +127,22 @@ static VkResult load_vulkan_library() {
 #if defined(WIN32)
     HMODULE library = LoadLibraryA("vulkan-1.dll");
     if (library == NULL)
-        library = GetModuleHandleA("vulkan-1.dll"); // maybe vulkan is already loaded and we only need to get the handle
+    {
+        // make it a little bit verbose
+        DWORD msgId = GetLastError();
+        if (msgId == 0) return VK_ERROR_INITIALIZATION_FAILED;
 
-    if (library == NULL) return VK_ERROR_INITIALIZATION_FAILED;
+        LPSTR msgBuf = nullptr;
+
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                     nullptr, msgId, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, nullptr);
+
+        std::string(msgBuf, size);
+        LocalFree(msgBuf);
+
+        std::cout << "WINAPI Error Message: " << msgBuf << "\n";
+        return VK_ERROR_INITIALIZATION_FAILED;
+    }
 
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)(void (*)(void))GetProcAddress(library, "vkGetInstanceProcAddr");
 #elif defined(__APPLE__)
