@@ -1119,11 +1119,11 @@ util::vulkaninfo_optional<ParsedResults> parse_arguments(int argc, char** argv, 
                 ++i;
             }
         } else if (strncmp("--json", argv[i], 6) == 0 || strncmp(argv[i], "-j", 2) == 0) {
-            if (argc > 7 && strncmp("--json=", argv[i], 7) == 0) {
+            if (strlen(argv[i]) > 7 && strncmp("--json=", argv[i], 7) == 0) {
                 results.selected_gpu = static_cast<uint32_t>(strtol(argv[i] + 7, nullptr, 10));
                 results.has_selected_gpu = true;
             }
-            if (argc > 3 && strncmp("-j=", argv[i], 3) == 0) {
+            if (strlen(argv[i]) > 3 && strncmp("-j=", argv[i], 3) == 0) {
                 results.selected_gpu = static_cast<uint32_t>(strtol(argv[i] + 3, nullptr, 10));
                 results.has_selected_gpu = true;
             }
