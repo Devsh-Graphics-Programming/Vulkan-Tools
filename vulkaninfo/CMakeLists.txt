@@ -20,21 +20,13 @@
 # based on the target API variant (e.g. Vulkan SC)
 project(vulkaninfo)
 
-option(VULKANINFO_BUILD_EXECUTABLE "Builds vulkaninfo executable instead of library" OFF)
+option(VULKANINFO_WITH_RC "Include RC" OFF)
 set(VULKANINFO_NAME vulkaninfo)
 set(GENERATED generated)
 
 add_library(vulkaninfo OBJECT)
-if (VULKANINFO_BUILD_EXECUTABLE)
-    add_executable(vulkaninfo_exe)
-    set_target_properties(vulkaninfo_exe PROPERTIES OUTPUT_NAME vulkaninfo)
-    target_compile_definitions(vulkaninfo_exe PUBLIC VKINFO_EXECUTABLE)
-    target_sources(vulkaninfo_exe PRIVATE vulkaninfo.cpp)
-endif()
-
 set_target_properties(vulkaninfo PROPERTIES OUTPUT_NAME ${VULKANINFO_NAME})
-
-target_sources(vulkaninfo PRIVATE vulkaninfo.cpp)
+target_sources(vulkaninfo PRIVATE vulkaninfo.cpp vulkaninfo.h)
 
 # Setup the vulkaninfo.rc file to contain the correct info
 # Optionally uses the VULKANINFO_BUILD_DLL_VERSIONINFO build option to allow setting the exact build version
@@ -59,7 +51,7 @@ if(WIN32)
     # RC file wants the value of FILEVERSION to separated by commas
     string(REPLACE "." ", " VULKANINFO_VER_FILE_VERSION "${VULKANINFO_RC_VERSION}")
 
-    if (VULKANINFO_BUILD_EXECUTABLE)
+    if (VULKANINFO_WITH_RC)
         # Configure the file to include the versioning info
         configure_file(vulkaninfo.rc.in ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)
         target_sources(vulkaninfo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/vulkaninfo.rc)

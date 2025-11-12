@@ -1292,6 +1292,17 @@ int vulkaninfo(int argc, char** argv) {
             surface_extension.create_window(instance);
             surface_extension.surface = surface_extension.create_surface(instance);
         }
+
+        struct WsiExiter {
+            AppInstance &instance;
+            ~WsiExiter() {
+                for (auto &surface_extension : instance.surface_extensions) {
+                    AppDestroySurface(instance, surface_extension.surface);
+                    surface_extension.destroy_window(instance);
+                }
+            }
+        } exiter{instance};
+
 #endif  // defined(VULKANINFO_WSI_ENABLED)
 
         std::vector<std::unique_ptr<AppGpu>> gpus;
@@ -1352,12 +1363,6 @@ int vulkaninfo(int argc, char** argv) {
 
         // Call the printer's destructor before the file handle gets closed
         printer.reset(nullptr);
-#if defined(VULKANINFO_WSI_ENABLED)
-        for (auto &surface_extension : instance.surface_extensions) {
-            AppDestroySurface(instance, surface_extension.surface);
-            surface_extension.destroy_window(instance);
-        }
-#endif  // defined(VULKANINFO_WSI_ENABLED)
     } catch (std::exception &e) {
         // Print the error to stderr and leave all outputs in a valid state (mainly for json)
         std::cerr << "ERROR at " << e.what() << "\n";
