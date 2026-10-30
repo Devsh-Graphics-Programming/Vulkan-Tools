@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
 # The VERSION field is generated with the "--generated-version" flag in the generate_source.py script
-project(Vulkan-Tools VERSION 1.4.332)
+project(Vulkan-Tools VERSION 1.4.363)
 
 # This variable enables downstream users to customize the target API
 # variant (e.g. Vulkan SC)
@@ -59,6 +59,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 find_package(VulkanHeaders ${PROJECT_VERSION} QUIET REQUIRED CONFIG)
 if ((APPLE OR BUILD_TESTS) AND NOT ANDROID)
     find_package(VulkanLoader QUIET REQUIRED CONFIG)
+endif()
+
+# Workaround AppleClang using the wrong headers when there are headers in /usr/local/include
+if (CMAKE_C_COMPILER_ID STREQUAL AppleClang AND TARGET Vulkan::Headers AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.25)
+    set_target_properties(Vulkan::Headers PROPERTIES SYSTEM OFF)
 endif()
 
 include(GNUInstallDirs)

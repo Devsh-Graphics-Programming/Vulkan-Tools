@@ -1144,7 +1144,7 @@ void DemoUpdateTargetIPD(struct demo *demo) {
         }
 
         if (calibrate_next) {
-            int64_t multiple = demo->next_present_id - past[count - 1].presentID;
+            int64_t multiple = demo->next_present_id - past[count - 1].presentID - 1;
             demo->prev_desired_present_time = (past[count - 1].actualPresentTime + (multiple * demo->target_IPD));
         }
         free(past);
@@ -1301,8 +1301,9 @@ static void demo_draw(struct demo *demo) {
         present.pNext = &regions;
     }
 
+    VkPresentTimesInfoGOOGLE present_time;
+    VkPresentTimeGOOGLE ptime;
     if (demo->VK_GOOGLE_display_timing_enabled) {
-        VkPresentTimeGOOGLE ptime;
         if (demo->prev_desired_present_time == 0) {
             // This must be the first present for this swapchain.
             //
@@ -1325,15 +1326,14 @@ static void demo_draw(struct demo *demo) {
         ptime.presentID = demo->next_present_id++;
         demo->prev_desired_present_time = ptime.desiredPresentTime;
 
-        VkPresentTimesInfoGOOGLE present_time = {
+        present_time = (VkPresentTimesInfoGOOGLE){
             .sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
             .pNext = present.pNext,
             .swapchainCount = present.swapchainCount,
             .pTimes = &ptime,
         };
-        if (demo->VK_GOOGLE_display_timing_enabled) {
-            present.pNext = &present_time;
-        }
+
+        present.pNext = &present_time;
     }
 
     err = vkQueuePresentKHR(demo->present_queue, &present);
@@ -3018,6 +3018,8 @@ static void demo_create_xcb_window(struct demo *demo) {
     xcb_change_property(demo->connection, XCB_PROP_MODE_REPLACE, demo->xcb_window, (*reply).atom, 4, 32, 1,
                         &(*demo->atom_wm_delete_window).atom);
     free(reply);
+    free(net_wm_name_reply);
+    free(utf8_string_reply);
 
     xcb_map_window(demo->connection, demo->xcb_window);
 
@@ -4326,8 +4328,16 @@ static void demo_select_physical_device(struct demo *demo) {
     {
         VkPhysicalDeviceProperties physicalDeviceProperties;
         vkGetPhysicalDeviceProperties(demo->gpu, &physicalDeviceProperties);
-        fprintf(stderr, "Selected GPU %d: %s, type: %s\n", demo->gpu_number, physicalDeviceProperties.deviceName,
-                to_string(physicalDeviceProperties.deviceType));
+        uint32_t api_major = VK_API_VERSION_MAJOR(physicalDeviceProperties.apiVersion);
+        uint32_t api_minor = VK_API_VERSION_MINOR(physicalDeviceProperties.apiVersion);
+        uint32_t api_patch = VK_API_VERSION_PATCH(physicalDeviceProperties.apiVersion);
+        uint32_t major = VK_API_VERSION_MAJOR(physicalDeviceProperties.driverVersion);
+        uint32_t minor = VK_API_VERSION_MINOR(physicalDeviceProperties.driverVersion);
+        uint32_t patch = VK_API_VERSION_PATCH(physicalDeviceProperties.driverVersion);
+        fprintf(stderr, "Selected GPU %d: %s, type: %s, apiVersion: %d (%d.%d.%d), driverVersion: %d (%d.%d.%d) \n",
+                demo->gpu_number, physicalDeviceProperties.deviceName, to_string(physicalDeviceProperties.deviceType),
+                physicalDeviceProperties.apiVersion, api_major, api_minor, api_patch, physicalDeviceProperties.driverVersion, major,
+                minor, patch);
     }
     free(physical_devices);
 

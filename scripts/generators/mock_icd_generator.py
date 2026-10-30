@@ -253,12 +253,17 @@ CUSTOM_C_INTERCEPTS = {
             pSurfaceFormats[1].surfaceFormat.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         }
         if (*pSurfaceFormatCount >= 1) {
-            pSurfaceFormats[1].pNext = nullptr;
+            pSurfaceFormats[0].pNext = nullptr;
             pSurfaceFormats[0].surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
             pSurfaceFormats[0].surfaceFormat.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         }
     }
-    return VK_SUCCESS;
+    if (*pSurfaceFormatCount >= 2) {
+        *pSurfaceFormatCount = 2;
+        return VK_SUCCESS;
+    } else {
+        return VK_INCOMPLETE;
+    }
 ''',
 'vkGetPhysicalDeviceSurfaceSupportKHR': '''
     // Currently say that all surface/queue combos are supported
@@ -1162,8 +1167,32 @@ CUSTOM_C_INTERCEPTS = {
         *pPropertyCount = 1;
     } else {
         unique_lock_t lock(global_lock);
+        *pPropertyCount = 1;
         pProperties[0].display = (VkDisplayKHR)global_unique_handle++;
+        pProperties[0].displayName = "Vulkan Mock Display";
         display_map[physicalDevice].insert(pProperties[0].display);
+    }
+    return VK_SUCCESS;
+''',
+'vkGetPhysicalDeviceDisplayPlanePropertiesKHR': '''
+    *pPropertyCount = 1;
+    if (pProperties) {
+        pProperties[0].currentDisplay = VK_NULL_HANDLE;
+        pProperties[0].currentStackIndex = 0;
+    }
+    return VK_SUCCESS;
+''',
+'vkGetDisplayPlaneSupportedDisplaysKHR': '''
+    *pDisplayCount = 1;
+    if (pDisplays) {
+        pDisplays[0] = {};
+    }
+    return VK_SUCCESS;
+''',
+'vkGetDisplayModePropertiesKHR': '''
+    *pPropertyCount = 1;
+    if (pProperties) {
+        pProperties[0] = {};
     }
     return VK_SUCCESS;
 ''',
@@ -1191,8 +1220,39 @@ CUSTOM_C_INTERCEPTS = {
 ''',
 'vkCreatePipelineBinariesKHR': '''
     unique_lock_t lock(global_lock);
-    for (uint32_t i = 0; i < pBinaries->pipelineBinaryCount; ++i) {
-        pBinaries->pPipelineBinaries[i] = (VkPipelineBinaryKHR)global_unique_handle++;
+    if (pBinaries->pPipelineBinaries != nullptr)
+    {
+        for (uint32_t i = 0; i < pBinaries->pipelineBinaryCount; ++i) {
+            pBinaries->pPipelineBinaries[i] = (VkPipelineBinaryKHR)global_unique_handle++;
+        }
+    }
+    else
+    {
+       // In this case, we need to return a return count, let's set it to 3
+       pBinaries->pipelineBinaryCount = 3;
+    }
+    return VK_SUCCESS;
+''',
+'vkGetPipelineKeyKHR': '''
+    if (pPipelineKey != nullptr)
+    {
+        pPipelineKey->keySize = 16;
+        std::memset(pPipelineKey->key, 0x12, pPipelineKey->keySize);
+    }
+    return VK_SUCCESS;
+''',
+'vkGetPipelineBinaryDataKHR': '''
+    static uint32_t fake_size = 64;
+    if (pPipelineBinaryDataSize != nullptr)
+    {
+        if (pPipelineBinaryData == nullptr)
+        {
+            *pPipelineBinaryDataSize = fake_size;
+        }
+        else
+        {
+            std::memset(pPipelineBinaryData, 0xABCD, fake_size);
+        }
     }
     return VK_SUCCESS;
 '''
@@ -1291,7 +1351,10 @@ class MockICDOutputGenerator(BaseGenerator):
             'vkEnumerateInstanceExtensionProperties',
             'vkEnumerateDeviceLayerProperties',
             'vkEnumerateDeviceExtensionProperties',
+            'vkGetPipelineKeyKHR',
+            'vkGetPipelineBinaryDataKHR',
         ]
+
         current_protect = None
         for name, cmd in self.vk.commands.items():
             if cmd.protect != current_protect:
