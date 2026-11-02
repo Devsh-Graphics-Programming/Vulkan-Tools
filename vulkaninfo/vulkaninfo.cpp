@@ -1534,8 +1534,15 @@ int vulkaninfo(int argc, char** argv) {
             AppInstance &instance;
             ~WsiExiter() {
                 for (auto &surface_extension : instance.surface_extensions) {
-                    AppDestroySurface(instance, surface_extension.surface);
-                    surface_extension.destroy_window(instance);
+                    // If the surface is shared across physical devices then we have to destroy it here as there's a single shared
+                    // surface for the AppInstance object (contrarily to per physical device surfaces that are maintained by AppSurface)
+                    if (surface_extension.create_surface) {
+                        vkDestroySurfaceKHR(instance.instance, surface_extension.surface, nullptr);
+                    }
+                    // If the surface extension has a destroy_window function then call it to destroy the single shared window
+                    if (surface_extension.destroy_window) {
+                        surface_extension.destroy_window(instance);
+                    }
                 }
             }
         } exiter{instance};
